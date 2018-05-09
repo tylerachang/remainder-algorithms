@@ -1,8 +1,10 @@
 /*  Computes a number based on prime modulo values
  *  See Chinese Remainder Theorem for proof of solution existence
  *  Implements and times three algorithms for computing the solution
+ *  In main(), use tests() to time algorithms for many values or oneTest() to check one number only
  *
- *  Supports up to 15 primes
+ *  Supports up to 15 primes because the product of
+ *  the first 16 primes would surpass 2^64 - 1, the size of an unsigned long long
  *
  *  Originally written 2016-06-16
  *  Updated for Math290 Reading in Number Theory
@@ -23,6 +25,8 @@ int loadAValues();
 unsigned long long method1();
 unsigned long long method2();
 unsigned long long method3();
+void tests(int, unsigned long long, unsigned long long);
+void oneTest();
 
 unsigned long long a[15];
 int mod[15];
@@ -30,55 +34,85 @@ int prime[15];
 
 clock_t timer;
 string response;
-int primeLimit;
+int primeLimit; //how many input modulos
 
 int main() {
     loadPrimes();
     loadAValues(); //product of the first nth primes
 
-    /*display a values
-     for (int c = 0; c < 15; c++)
-     {
-        cout << c << ": " << a[c] << endl;
-     }
-     */
-
-    while (true) {
-        cout << "Mods: ";
-        getline(cin, response);
-        stringstream(response) >> primeLimit; //how many primes
-        if (primeLimit > 15) {
-            cout << "Supports up to 15 primes.\n";
-            continue;
-        }
-        for (int c = 0; c < primeLimit; c++) {
-            getline(cin, response);
-            stringstream(response) >> mod[c];
-        }
-        cout << endl;
-
-        timer = clock();
-        cout << method1(); //brute force method
-        timer = clock() - timer;
-        cout << "     Time: " << timer << endl;
-        
-        timer = clock();
-        cout << method2();
-        timer = clock() - timer;
-        cout << "     Time: " << timer << endl;
-        
-        timer = clock();
-        cout << method3();
-        timer = clock() - timer;
-        cout << "     Time: " << timer << endl;
-        
-        cout << "(" << CLOCKS_PER_SEC << " clocks per second)" << endl;
-
-        //print the number to add to generate more solutions
-        cout << " (" << a[primeLimit - 1] << ")" << endl << endl;
-    }
-    cin.get();
+    //inputs: how many modulos, minimum test value, maximum test value
+    tests(15, a[14] - 10000000, a[14]);
+    
+    //oneTest();
+    
     return 0;
+}
+
+
+/** Runs a test for a given number of mods and a range of inputs */
+void tests(int modulos, unsigned long long min, unsigned long long max) {
+    cout << "Running " << max-min+1 << " numers..." << endl;
+    primeLimit = modulos;
+    unsigned long long currTest = 0;
+    for (int alg = 0; alg < 4; alg++) {
+        //run timer while all possibilities checked because otherwise times are too fast
+        timer = clock();
+        //try all possibilities
+        for (currTest = min; currTest <= max; currTest++) {
+            //get the modulo values
+            for (int i = 0; i < modulos; i++) {
+                mod[i] = currTest % prime[i];
+            }
+            //alg == 0 is our control test just iterating from min to max
+            /* method1() commented out because super slow
+            if (alg == 1)
+                //method1(); //brute force method
+            */
+            if (alg == 2)
+                method2();
+            if (alg == 3)
+                method3();
+        }
+        timer = clock() - timer;
+        cout << "Time for algorithm " << alg << ": " << timer << endl;
+    }
+    cout << "(" << CLOCKS_PER_SEC << " clocks per second)" << endl;
+}
+
+/** Runs a test for one input number */
+void oneTest() {
+    cout << "How many mods: ";
+    getline(cin, response);
+    stringstream(response) >> primeLimit; //how many primes
+    if (primeLimit > 15) {
+        cout << "Supports up to 15 primes.\n";
+        return;
+    }
+    for (int c = 0; c < primeLimit; c++) {
+        getline(cin, response);
+        stringstream(response) >> mod[c];
+    }
+    cout << endl;
+
+    timer = clock();
+    //cout << method1(); //brute force method, commented out for now because super slow
+    timer = clock() - timer;
+    cout << "     Time: " << timer << endl;
+
+    timer = clock();
+    cout << method2();
+    timer = clock() - timer;
+    cout << "     Time: " << timer << endl;
+
+    timer = clock();
+    cout << method3();
+    timer = clock() - timer;
+    cout << "     Time: " << timer << endl;
+
+    cout << "(" << CLOCKS_PER_SEC << " clocks per second)" << endl;
+
+    //print the number to add to generate more solutions
+    cout << " (" << a[primeLimit - 1] << ")" << endl << endl;
 }
 
 int loadPrimes() {
